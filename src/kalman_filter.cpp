@@ -1,4 +1,5 @@
 #include "kalman_filter.h"
+#include <math.h>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -35,11 +36,13 @@ void KalmanFilter::Update(const VectorXd &z) {
     * update the state by using Kalman Filter equations
   */
 
-	VectorXd y = z - H_*x_;
-	MatrixXd S = H_*P_*H_.transpose() + R_;
-	MatrixXd K = P_*H_.transpose()*S.inverse();
+	MatrixXd PHt = P_*H_.transpose();
 
-	x_ = x_ + K*y;
+	VectorXd y = z - H_*x_;
+	MatrixXd S = H_*PHt + R_;
+	MatrixXd K = PHt*S.inverse();
+
+	x_ = x_ + (K*y);
 	MatrixXd I = MatrixXd::Identity(x_.size(),x_.size());
 	P_ = (I - K*H_)*P_;
 }
@@ -54,19 +57,30 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 	float theta = atan2(x_(1), x_(0));
 	float phidot = (x_(0)*x_(2) + x_(1)*x_(3))/rho;
 
-	while (theta - z(1) > pi/2)
-		theta = theta - pi;
-	while (z(1) - theta > pi/2)
-		theta = theta + pi;
+	// If px or py are very small, theta and phidot are set to zero
+	if (fabs(x_(0)) < 0.0001)// || fabs(x_(1)) < 0.0001)
+	{
+		//theta = 0;
+		phidot = 0;
+	}
+	
 
 	VectorXd pred(3);
 	pred(0) = rho;
 	pred(1) = theta;
 	pred(2) = phidot;
 
+
+	while (pred(1) - z(1) > pi/2)
+		pred(1) = theta - pi;
+	while (z(1) - pred(1) > pi/2)
+		pred(1) = theta + pi;
+
+	MatrixXd PHt = P_*H_.transpose();
+
 	VectorXd y = z - pred;
-	MatrixXd S = H_*P_*H_.transpose() + R_;
-	MatrixXd K = P_*H_.transpose()*S.inverse();
+	MatrixXd S = H_*PHt + R_;
+	MatrixXd K = PHt*S.inverse();
 
 	x_ = x_ + K*y;
 	MatrixXd I = MatrixXd::Identity(x_.size(),x_.size());
