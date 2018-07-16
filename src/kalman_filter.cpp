@@ -49,9 +49,15 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   TODO:
     * update the state by using Extended Kalman Filter equations
   */
+	float pi = 3.1415;
 	float rho = sqrt(x_(0)*x_(0) + x_(1)*x_(1));
 	float theta = atan2(x_(1), x_(0));
 	float phidot = (x_(0)*x_(2) + x_(1)*x_(3))/rho;
+
+	while (theta - z(1) > pi/2)
+		theta = theta - pi;
+	while (z(1) - theta > pi/2)
+		theta = theta + pi;
 
 	VectorXd pred(3);
 	pred(0) = rho;
