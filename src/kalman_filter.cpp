@@ -55,26 +55,24 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 	float pi = 3.1415;
 	float rho = sqrt(x_(0)*x_(0) + x_(1)*x_(1));
 	float theta = atan2(x_(1), x_(0));
-	float phidot = (x_(0)*x_(2) + x_(1)*x_(3))/rho;
+	float phidot = 0.0001;// = (x_(0)*x_(2) + x_(1)*x_(3))/rho;
 
 	// If px or py are very small, theta and phidot are set to zero
-	if (fabs(x_(0)) < 0.0001)// || fabs(x_(1)) < 0.0001)
-	{
-		//theta = 0;
-		phidot = 0;
-	}
-	
+	if (fabs(rho) >= 0.0001)// || fabs(x_(1)) < 0.0001)
+		phidot = (x_(0)*x_(2) + x_(1)*x_(3))/rho;
+
 
 	VectorXd pred(3);
 	pred(0) = rho;
 	pred(1) = theta;
 	pred(2) = phidot;
 
-
-	while (pred(1) - z(1) > pi/2)
+	if (pred(1) - z(1) > pi/2)
 		pred(1) = theta - pi;
-	while (z(1) - pred(1) > pi/2)
+	if (z(1) - pred(1) > pi/2)
 		pred(1) = theta + pi;
+	
+	//pred(1) = atan2(sin(theta), cos(theta));
 
 	MatrixXd PHt = P_*H_.transpose();
 
