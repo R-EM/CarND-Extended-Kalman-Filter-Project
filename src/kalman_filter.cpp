@@ -1,6 +1,8 @@
 #include "kalman_filter.h"
 #include <math.h>
+#include <iostream>
 
+using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
@@ -10,6 +12,7 @@ using Eigen::VectorXd;
 KalmanFilter::KalmanFilter() {}
 
 KalmanFilter::~KalmanFilter() {}
+void NormaliseAngle(double& phi);
 
 void KalmanFilter::Init(VectorXd &x_in, MatrixXd &P_in, MatrixXd &F_in,
                         MatrixXd &H_in, MatrixXd &R_in, MatrixXd &Q_in) {
@@ -35,7 +38,7 @@ void KalmanFilter::Update(const VectorXd &z) {
   TODO:
     * update the state by using Kalman Filter equations
   */
-
+	
 	MatrixXd PHt = P_*H_.transpose();
 
 	VectorXd y = z - H_*x_;
@@ -67,20 +70,30 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 	pred(1) = theta;
 	pred(2) = phidot;
 
+	/*
 	if (pred(1) - z(1) > pi/2)
 		pred(1) = theta - pi;
 	if (z(1) - pred(1) > pi/2)
 		pred(1) = theta + pi;
-	
+	*/
+
 	//pred(1) = atan2(sin(theta), cos(theta));
 
+	
 	MatrixXd PHt = P_*H_.transpose();
 
 	VectorXd y = z - pred;
 	MatrixXd S = H_*PHt + R_;
 	MatrixXd K = PHt*S.inverse();
 
+	NormaliseAngle(y(1));
+
 	x_ = x_ + K*y;
 	MatrixXd I = MatrixXd::Identity(x_.size(),x_.size());
 	P_ = (I - K*H_)*P_;
+}
+
+void NormaliseAngle(double& phi)
+{
+	phi = atan2(sin(phi), cos(phi));
 }
